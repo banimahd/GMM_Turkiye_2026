@@ -85,8 +85,8 @@ def build_model_from_weights(layer_sizes, weights_list, biases_list):
     with torch.no_grad():
         for i in range(len(weights_list)):
             # Get weights and biases from MATLAB
-            W = weights_list[i]
-            b = biases_list[i].flatten()
+            W = np.array(weights_list[i], dtype=np.float32)
+            b = np.array(biases_list[i], dtype=np.float32).flatten()
             
             # Calculate layer index in PyTorch (each Linear layer is at even index)
             layer_idx = i * 2
@@ -104,13 +104,13 @@ def load_models_from_mat(weights_file):
         param_max = data['Param_Max'].flatten()
         param_min = data['Param_Min'].flatten()
         
-        # Check if we have the new format with layer_sizes
+        # Get layer sizes
         if 'layer_sizes' in data:
             layer_sizes_list = data['layer_sizes'][0]
         else:
-            # Default: 5 inputs, 20 hidden, 25 outputs
             layer_sizes_list = [[5, 20, 25] for _ in range(10)]
         
+        # Get weights and biases
         weights_list = data['weights_list'][0]
         biases_list = data['biases_list'][0]
         
@@ -125,19 +125,25 @@ def load_models_from_mat(weights_file):
                     sizes = layer_sizes_list[i]
                 
                 # Get weights and biases for each layer
-                layer_weights = weights_list[i]
-                layer_biases = biases_list[i]
+                if isinstance(weights_list[i], np.ndarray) and weights_list[i].size == 1:
+                    layer_weights = [weights_list[i].item()]
+                else:
+                    layer_weights = weights_list[i]
                 
-                # Convert to list if needed
-                if isinstance(layer_weights, np.ndarray) and layer_weights.size == 1:
-                    layer_weights = [layer_weights.item()]
-                elif not isinstance(layer_weights, list):
+                if isinstance(biases_list[i], np.ndarray) and biases_list[i].size == 1:
+                    layer_biases = [biases_list[i].item()]
+                else:
+                    layer_biases = biases_list[i]
+                
+                # Ensure they are lists
+                if not isinstance(layer_weights, list):
                     layer_weights = [layer_weights]
-                
-                if isinstance(layer_biases, np.ndarray) and layer_biases.size == 1:
-                    layer_biases = [layer_biases.item()]
-                elif not isinstance(layer_biases, list):
+                if not isinstance(layer_biases, list):
                     layer_biases = [layer_biases]
+                
+                # Ensure all items are numpy arrays
+                layer_weights = [np.array(w, dtype=np.float32) for w in layer_weights]
+                layer_biases = [np.array(b, dtype=np.float32) for b in layer_biases]
                 
                 model = build_model_from_weights(sizes, layer_weights, layer_biases)
                 model.eval()
