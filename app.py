@@ -57,7 +57,7 @@ st.markdown("""
     }
     .output-value {
         color: #1565C0 !important;
-        font-size: 1.8rem !important;
+        font-size: 1.6rem !important;
         font-weight: 700 !important;
         margin: 0 !important;
     }
@@ -90,37 +90,26 @@ def load_models_from_mat(weights_file):
         param_max = data['Param_Max'].flatten()
         param_min = data['Param_Min'].flatten()
         
-        # Get weights and biases
         W1_list = data['W1_list'][0]
         b1_list = data['b1_list'][0]
-        
-        # Check if W2 exists
-        if 'W2_list' in data and len(data['W2_list']) > 0:
-            W2_list = data['W2_list'][0]
-            b2_list = data['b2_list'][0]
-        else:
-            # If only one layer, create dummy second layer
-            W2_list = [np.random.randn(25, 20) for _ in range(len(W1_list))]
-            b2_list = [np.random.randn(25) for _ in range(len(W1_list))]
+        W2_list = data['W2_list'][0]
+        b2_list = data['b2_list'][0]
         
         models = []
         
         for i in range(len(W1_list)):
             try:
-                # Get weights for this model
                 W1 = np.array(W1_list[i], dtype=np.float32)
                 b1 = np.array(b1_list[i], dtype=np.float32).flatten()
                 W2 = np.array(W2_list[i], dtype=np.float32)
                 b2 = np.array(b2_list[i], dtype=np.float32).flatten()
                 
-                # Create model
                 model = SimpleNN(
                     input_size=W1.shape[1],
                     hidden_size=W1.shape[0],
                     output_size=W2.shape[0]
                 )
                 
-                # Set weights
                 with torch.no_grad():
                     model.fc1.weight.data = torch.tensor(W1, dtype=torch.float32)
                     model.fc1.bias.data = torch.tensor(b1, dtype=torch.float32)
@@ -143,7 +132,6 @@ def load_models_from_mat(weights_file):
 
 @st.cache_resource
 def load_gmm_models():
-    # Try different file names
     possible_files = [
         "GMM_Turkie_2025_weights_simple.mat",
         "GMM_Turkie_2025_weights.mat",
@@ -157,7 +145,6 @@ def load_gmm_models():
             if models is not None and len(models) > 0:
                 return models, param_max, param_min
     
-    # If no file exists, try to download
     try:
         url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025_weights_simple.mat"
         urllib.request.urlretrieve(url, "GMM_Turkie_2025_weights_simple.mat")
@@ -301,35 +288,49 @@ def main():
     with col1:
         st.markdown('<p class="section-header">📤 Outputs</p>', unsafe_allow_html=True)
         
-        row1 = st.columns(3)
-        outputs_row1 = [
-            ('PGA', 'cm/s²', 'output_PGA'),
-            ('PGV', 'cm/s', 'output_PGV'),
-            ('Ia', 'cm/s', 'output_Ia')
-        ]
-        for col, (name, unit, key) in zip(row1, outputs_row1):
-            val = st.session_state.get(key, 0)
-            with col:
-                st.markdown(f'<p class="output-label">{name}</p>', unsafe_allow_html=True)
-                st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
-                st.markdown(f'<p class="output-unit">{unit}</p>', unsafe_allow_html=True)
+        # Row 1: PGA (cm/s²) | PGV (cm/s)
+        row1 = st.columns(2)
+        with row1[0]:
+            val = st.session_state.get('output_PGA', 0)
+            st.markdown(f'<p class="output-label">PGA</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-unit">cm/s²</p>', unsafe_allow_html=True)
+        with row1[1]:
+            val = st.session_state.get('output_PGV', 0)
+            st.markdown(f'<p class="output-label">PGV</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-unit">cm/s</p>', unsafe_allow_html=True)
         
-        row2 = st.columns(3)
-        outputs_row2 = [
-            ('D5-75', 's', 'output_D5-75'),
-            ('D5-95', 's', 'output_D5-95'),
-            ('Tm', 's', 'output_Tm')
-        ]
-        for col, (name, unit, key) in zip(row2, outputs_row2):
-            val = st.session_state.get(key, 0)
-            with col:
-                st.markdown(f'<p class="output-label">{name}</p>', unsafe_allow_html=True)
-                st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
-                st.markdown(f'<p class="output-unit">{unit}</p>', unsafe_allow_html=True)
+        # Row 2: Ia (cm/s) | D5-75 (s)
+        row2 = st.columns(2)
+        with row2[0]:
+            val = st.session_state.get('output_Ia', 0)
+            st.markdown(f'<p class="output-label">Ia</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-unit">cm/s</p>', unsafe_allow_html=True)
+        with row2[1]:
+            val = st.session_state.get('output_D5-75', 0)
+            st.markdown(f'<p class="output-label">D5-75</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-unit">s</p>', unsafe_allow_html=True)
         
-        row3 = st.columns(1)
-        val = st.session_state.get('output_CAV', 0)
+        # Row 3: D5-95 (s) | Tm (s)
+        row3 = st.columns(2)
         with row3[0]:
+            val = st.session_state.get('output_D5-95', 0)
+            st.markdown(f'<p class="output-label">D5-95</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-unit">s</p>', unsafe_allow_html=True)
+        with row3[1]:
+            val = st.session_state.get('output_Tm', 0)
+            st.markdown(f'<p class="output-label">Tm</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-unit">s</p>', unsafe_allow_html=True)
+        
+        # Row 4: CAV (cm/s)
+        row4 = st.columns(1)
+        with row4[0]:
+            val = st.session_state.get('output_CAV', 0)
             st.markdown(f'<p class="output-label">CAV</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">cm/s</p>', unsafe_allow_html=True)
