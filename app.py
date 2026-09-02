@@ -16,65 +16,23 @@ st.set_page_config(page_title="GMM-Turkey: Ground Motion Predictor", layout="wid
 
 st.markdown("""
 <style>
-    .main-title {
-        font-size: 3.0rem !important;
-        font-weight: 700 !important;
-        color: #1a1a2e !important;
-        text-align: center !important;
-        padding-bottom: 0rem !important;
-        margin-bottom: 0rem !important;
-        letter-spacing: -0.5px !important;
-    }
-    .sub-title {
-        text-align: center !important;
-        font-size: 1.1rem !important;
-        color: #666666 !important;
-        margin-top: -0.3rem !important;
-        margin-bottom: 0.5rem !important;
-        font-weight: 400 !important;
-    }
-    .section-header {
-        font-size: 1.3rem !important;
-        font-weight: 600 !important;
-        color: #16213e !important;
-        margin-top: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
-    }
-    .stSidebar .stNumberInput label {
-        font-size: 1.0rem !important;
-        font-weight: 500 !important;
-    }
-    .stButton button {
-        font-size: 1.1rem !important;
-        font-weight: 600 !important;
-        padding: 0.5rem 2rem !important;
-    }
-    .output-label {
-        color: #000000 !important;
-        font-size: 0.9rem !important;
-        font-weight: 600 !important;
-        margin: 0 !important;
-    }
-    .output-value {
-        color: #1565C0 !important;
-        font-size: 1.6rem !important;
-        font-weight: 700 !important;
-        margin: 0 !important;
-    }
-    .output-unit {
-        color: #666 !important;
-        font-size: 0.8rem !important;
-        margin: 0 !important;
-    }
+    .main-title { font-size: 3.0rem !important; font-weight: 700 !important; color: #1a1a2e !important; text-align: center !important; padding-bottom: 0rem !important; margin-bottom: 0rem !important; letter-spacing: -0.5px !important; }
+    .sub-title { text-align: center !important; font-size: 1.1rem !important; color: #666666 !important; margin-top: -0.3rem !important; margin-bottom: 0.5rem !important; font-weight: 400 !important; }
+    .section-header { font-size: 1.3rem !important; font-weight: 600 !important; color: #16213e !important; margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+    .stSidebar .stNumberInput label { font-size: 1.0rem !important; font-weight: 500 !important; }
+    .stButton button { font-size: 1.1rem !important; font-weight: 600 !important; padding: 0.5rem 2rem !important; }
+    .output-label { color: #000000 !important; font-size: 0.9rem !important; font-weight: 600 !important; margin: 0 !important; }
+    .output-value { color: #1565C0 !important; font-size: 1.6rem !important; font-weight: 700 !important; margin: 0 !important; }
+    .output-unit { color: #666 !important; font-size: 0.8rem !important; margin: 0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
 
 class SimpleNN(nn.Module):
-    def __init__(self, input_size=5, hidden_size=20, output_size=25):
+    def __init__(self):
         super(SimpleNN, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.fc1 = nn.Linear(5, 15)   # 5 ورودی → 15 نرون مخفی
+        self.fc2 = nn.Linear(15, 25)  # 15 نرون مخفی → 25 خروجی
         self.tanh = nn.Tanh()
     
     def forward(self, x):
@@ -99,16 +57,12 @@ def load_models_from_mat(weights_file):
         
         for i in range(len(W1_list)):
             try:
+                model = SimpleNN()
+                
                 W1 = np.array(W1_list[i], dtype=np.float32)
                 b1 = np.array(b1_list[i], dtype=np.float32).flatten()
                 W2 = np.array(W2_list[i], dtype=np.float32)
                 b2 = np.array(b2_list[i], dtype=np.float32).flatten()
-                
-                model = SimpleNN(
-                    input_size=W1.shape[1],
-                    hidden_size=W1.shape[0],
-                    output_size=W2.shape[0]
-                )
                 
                 with torch.no_grad():
                     model.fc1.weight.data = torch.tensor(W1, dtype=torch.float32)
@@ -126,14 +80,14 @@ def load_models_from_mat(weights_file):
         return models, param_max, param_min
     
     except Exception as e:
-        st.error(f"Error loading .mat file: {e}")
+        st.error(f"❌ Error loading .mat file: {e}")
         return None, None, None
 
 
 @st.cache_resource
 def load_gmm_models():
     possible_files = [
-        "GMM_Turkie_2025_weights_simple.mat",
+        "GMM_Turkie_2025_weights_exact.mat",
         "GMM_Turkie_2025_weights.mat",
         "GMM_Turkie_2025.mat"
     ]
@@ -145,9 +99,9 @@ def load_gmm_models():
                 return models, param_max, param_min
     
     try:
-        url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025_weights_simple.mat"
-        urllib.request.urlretrieve(url, "GMM_Turkie_2025_weights_simple.mat")
-        return load_models_from_mat("GMM_Turkie_2025_weights_simple.mat")
+        url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025_weights_exact.mat"
+        urllib.request.urlretrieve(url, "GMM_Turkie_2025_weights_exact.mat")
+        return load_models_from_mat("GMM_Turkie_2025_weights_exact.mat")
     except Exception as e:
         st.error(f"❌ Could not download model file: {e}")
         return None, None, None
@@ -170,10 +124,9 @@ def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
             output = model(inputs_tensor).numpy().flatten()
             outputs_mean += output / len(models)
     
-    # MATLAB Output order (exactly as in Call_Back_Excel.m):
+    # MATLAB Output order:
     # 1: PGA, 2: PGV, 3: Ia, 4: D5-75, 5: D5-95, 6: Tm, 7: CAV
-    # 8-25: PSa values (0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4)
-    
+    # 8-25: PSa values
     pga = round(np.exp(outputs_mean[0]) * 986, 2)
     pgv = round(np.exp(outputs_mean[1]), 2)
     ia = round(np.exp(outputs_mean[2]), 3)
@@ -287,7 +240,6 @@ def main():
     with col1:
         st.markdown('<p class="section-header">📤 Outputs</p>', unsafe_allow_html=True)
         
-        # Row 1: PGA (cm/s²) | PGV (cm/s)
         row1 = st.columns(2)
         with row1[0]:
             val = st.session_state.get('output_PGA', 0)
@@ -300,7 +252,6 @@ def main():
             st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">cm/s</p>', unsafe_allow_html=True)
         
-        # Row 2: Ia (cm/s) | D5-75 (s)
         row2 = st.columns(2)
         with row2[0]:
             val = st.session_state.get('output_Ia', 0)
@@ -313,7 +264,6 @@ def main():
             st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">s</p>', unsafe_allow_html=True)
         
-        # Row 3: D5-95 (s) | Tm (s)
         row3 = st.columns(2)
         with row3[0]:
             val = st.session_state.get('output_D5-95', 0)
@@ -326,7 +276,6 @@ def main():
             st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">s</p>', unsafe_allow_html=True)
         
-        # Row 4: CAV (cm/s)
         row4 = st.columns(1)
         with row4[0]:
             val = st.session_state.get('output_CAV', 0)
