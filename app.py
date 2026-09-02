@@ -140,7 +140,6 @@ def load_gmm_models():
     
     for filename in possible_files:
         if os.path.exists(filename):
-            st.info(f"📂 Loading from: {filename}")
             models, param_max, param_min = load_models_from_mat(filename)
             if models is not None and len(models) > 0:
                 return models, param_max, param_min
@@ -148,7 +147,6 @@ def load_gmm_models():
     try:
         url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025_weights_simple.mat"
         urllib.request.urlretrieve(url, "GMM_Turkie_2025_weights_simple.mat")
-        st.info("✅ Model weights downloaded successfully.")
         return load_models_from_mat("GMM_Turkie_2025_weights_simple.mat")
     except Exception as e:
         st.error(f"❌ Could not download model file: {e}")
@@ -172,9 +170,10 @@ def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
             output = model(inputs_tensor).numpy().flatten()
             outputs_mean += output / len(models)
     
-    # MATLAB Output order:
+    # MATLAB Output order (exactly as in Call_Back_Excel.m):
     # 1: PGA, 2: PGV, 3: Ia, 4: D5-75, 5: D5-95, 6: Tm, 7: CAV
-    # 8-25: PSa values
+    # 8-25: PSa values (0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4)
+    
     pga = round(np.exp(outputs_mean[0]) * 986, 2)
     pgv = round(np.exp(outputs_mean[1]), 2)
     ia = round(np.exp(outputs_mean[2]), 3)
@@ -306,7 +305,7 @@ def main():
         with row2[0]:
             val = st.session_state.get('output_Ia', 0)
             st.markdown(f'<p class="output-label">Ia</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.3f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">cm/s</p>', unsafe_allow_html=True)
         with row2[1]:
             val = st.session_state.get('output_D5-75', 0)
