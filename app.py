@@ -124,9 +124,10 @@ def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
             output = model(inputs_tensor).numpy().flatten()
             outputs_mean += output / len(models)
     
-    # MATLAB Output order:
+    # MATLAB Output order (exactly as in Call_Back_Excel.m):
     # 1: PGA, 2: PGV, 3: Ia, 4: D5-75, 5: D5-95, 6: Tm, 7: CAV
-    # 8-25: PSa values
+    # 8-25: PSa values (0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4)
+    
     pga = round(np.exp(outputs_mean[0]) * 986, 2)
     pgv = round(np.exp(outputs_mean[1]), 2)
     ia = round(np.exp(outputs_mean[2]), 3)
@@ -240,6 +241,7 @@ def main():
     with col1:
         st.markdown('<p class="section-header">📤 Outputs</p>', unsafe_allow_html=True)
         
+        # Row 1: PGA (cm/s²) | PGV (cm/s)
         row1 = st.columns(2)
         with row1[0]:
             val = st.session_state.get('output_PGA', 0)
@@ -252,6 +254,7 @@ def main():
             st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">cm/s</p>', unsafe_allow_html=True)
         
+        # Row 2: Ia (cm/s) | D5-75 (s)
         row2 = st.columns(2)
         with row2[0]:
             val = st.session_state.get('output_Ia', 0)
@@ -264,6 +267,7 @@ def main():
             st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">s</p>', unsafe_allow_html=True)
         
+        # Row 3: D5-95 (s) | Tm (s)
         row3 = st.columns(2)
         with row3[0]:
             val = st.session_state.get('output_D5-95', 0)
@@ -276,6 +280,7 @@ def main():
             st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
             st.markdown(f'<p class="output-unit">s</p>', unsafe_allow_html=True)
         
+        # Row 4: CAV (cm/s)
         row4 = st.columns(1)
         with row4[0]:
             val = st.session_state.get('output_CAV', 0)
