@@ -88,9 +88,10 @@ def load_models_from_mat(weights_file):
     try:
         data = scipy.io.loadmat(weights_file)
         
-        param_max = data['Param_Max'].flatten()
+        # Extract parameters
+        param_max = data['Param_Max'].flatten()  # [FD, FM, Mw, RJB, VS30]
         param_min = data['Param_Min'].flatten()
-        net_save = data['Net_Save'][0]
+        net_save = data['Net_Save'][0]  # 1x10 cell array
         
         models = []
         
@@ -98,16 +99,48 @@ def load_models_from_mat(weights_file):
             net_struct = net_save[i]
             
             try:
-                input_size = net_struct['inputs'][0,0][0][0][0][0][0][0][0][0]
-                layer_sizes = [input_size]
+                # Get the network object (it's a 1x1 struct)
+                if isinstance(net_struct, np.ndarray) and net_struct.size == 1:
+                    net = net_struct.item()
+                else:
+                    net = net_struct
                 
+                # Extract weights and biases from MATLAB network
+                # MATLAB network structure: net.IW{1,1}, net.LW{2,1}, net.b{1}, net.b{2}, etc.
                 state_dict = {}
-                for j in range(len(net_struct['layers'][0])):
-                    layer = net_struct['layers'][0][j]
+                layer_sizes = []
+                
+                # Input layer size
+                if hasattr(net, 'inputs') and hasattr(net.inputs, 'size'):
+                    input_size = net.inputs.size
+                else:
+                    input_size = 5  # Default: 5 inputs (FD, FM, Mw, RJB, VS30)
+                layer_sizes.append(input_size)
+                
+                # Get weights and biases from layers
+                if hasattr(net, 'IW') and hasattr(net, 'LW') and hasattr(net, 'b'):
+                    # IW: Input weights (cell array)
+                    # LW: Layer weights (cell array)
+                    # b: Biases (cell array)
                     
-                    if 'weights' in layer.dtype.names and 'biases' in layer.dtype.names:
-                        W = layer['weights'][0,0]
-                        b = layer['biases'][0,0]
+                    # Number of layers
+                    num_layers = len(net.b) if hasattr(net, 'b') else 2
+                    
+                    for j in range(num_layers):
+                        # Get weights for this layer
+                        if j == 0:
+                            W = net.IW[0,0] if hasattr(net.IW, 'shape') else net.IW
+                        else:
+                            if hasattr(net.LW, 'shape'):
+                                W = net.LW[j, j-1]
+                            else:
+                                W = net.LW
+                        
+                        # Get biases for this layer
+                        if hasattr(net.b, 'shape'):
+                            b = net.b[j, 0]
+                        else:
+                            b = net.b
                         
                         if W is not None and b is not None:
                             if isinstance(W, np.ndarray) and isinstance(b, np.ndarray):
@@ -120,26 +153,29 @@ def load_models_from_mat(weights_file):
                     model.load_state_dict(state_dict, strict=False)
                     model.eval()
                     models.append(model)
+                    print(f"✅ Model {i+1} loaded successfully.")
+                else:
+                    print(f"⚠️ Model {i+1} has no weights.")
                     
             except Exception as e:
+                print(f"⚠️ Error loading model {i+1}: {e}")
                 continue
         
         return models, param_max, param_min
     
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        st.error(f"Error loading .mat file: {e}")
         return None, None, None
 
 
 @st.cache_resource
 def load_gmm_models():
-    # Check if file exists locally, if not download from GitHub (CORRECTED REPO)
+    # Check if file exists locally, if not download from GitHub
     if not os.path.exists("GMM_Turkie_2025.mat"):
         try:
-            # !!! CHANGED THE URL TO THE NEW REPOSITORY !!!
             url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025.mat"
             urllib.request.urlretrieve(url, "GMM_Turkie_2025.mat")
-            st.info("Model file downloaded successfully from the new repository.")
+            st.info("Model file downloaded successfully from GitHub.")
         except Exception as e:
             st.error(f"Could not download model file: {e}")
             return None, None, None
@@ -153,6 +189,7 @@ def normalize_inputs(inputs, param_min, param_max):
 
 
 def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
+    # Order: [FD; FM; Mw; RJB; VS30]
     inputs = np.array([fd, fm, mw, rjb, vs30], dtype=np.float32).reshape(-1, 1)
     
     inputs_norm = normalize_inputs(inputs, param_min.reshape(-1, 1), param_max.reshape(-1, 1))
