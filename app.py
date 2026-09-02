@@ -2,11 +2,11 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy.io
 import torch
 import torch.nn as nn
-import scipy.io
-import urllib.request
 import os
+import urllib.request
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -70,18 +70,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-class PINNModel(nn.Module):
-    def __init__(self, layer_sizes):
-        super(PINNModel, self).__init__()
-        layers = []
-        for i in range(len(layer_sizes) - 1):
-            layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
-            if i < len(layer_sizes) - 2:
-                layers.append(nn.Tanh())
-        self.network = nn.Sequential(*layers)
-
+class SimpleNN(nn.Module):
+    def __init__(self, input_size=5, hidden_size=20, output_size=25):
+        super(SimpleNN, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.tanh = nn.Tanh()
+    
     def forward(self, x):
-        return self.network(x)
+        x = self.tanh(self.fc1(x))
+        x = self.fc2(x)
+        return x
 
 
 def load_models_from_mat(weights_file):
@@ -90,83 +89,52 @@ def load_models_from_mat(weights_file):
         
         param_max = data['Param_Max'].flatten()
         param_min = data['Param_Min'].flatten()
-        net_save = data['Net_Save'][0]
+        weights_list = data['weights_list'][0]
+        biases_list = data['biases_list'][0]
         
         models = []
         
-        for i in range(len(net_save)):
-            net_struct = net_save[i]
-            
+        for i in range(len(weights_list)):
             try:
-                # Get the network object
-                if isinstance(net_struct, np.ndarray) and net_struct.size == 1:
-                    net = net_struct.item()
-                else:
-                    net = net_struct
+                W1 = weights_list[i][0]
+                b1 = biases_list[i][0].flatten()
+                W2 = weights_list[i][1]
+                b2 = biases_list[i][1].flatten()
                 
-                # Extract weights and biases
-                state_dict = {}
-                layer_sizes = [5]  # 5 inputs: FD, FM, Mw, RJB, VS30
+                model = SimpleNN(input_size=5, hidden_size=W1.shape[0], output_size=W2.shape[0])
                 
-                # Get number of layers
-                if hasattr(net, 'b'):
-                    num_layers = len(net.b)
-                else:
-                    num_layers = 2
+                with torch.no_grad():
+                    model.fc1.weight.data = torch.tensor(W1, dtype=torch.float32)
+                    model.fc1.bias.data = torch.tensor(b1, dtype=torch.float32)
+                    model.fc2.weight.data = torch.tensor(W2, dtype=torch.float32)
+                    model.fc2.bias.data = torch.tensor(b2, dtype=torch.float32)
                 
-                for j in range(num_layers):
-                    # Get weights
-                    if j == 0:
-                        if hasattr(net, 'IW'):
-                            W = net.IW[0,0] if hasattr(net.IW, 'shape') else net.IW
-                        else:
-                            W = None
-                    else:
-                        if hasattr(net, 'LW'):
-                            W = net.LW[j, j-1] if hasattr(net.LW, 'shape') else net.LW
-                        else:
-                            W = None
-                    
-                    # Get biases
-                    if hasattr(net, 'b'):
-                        b = net.b[j, 0] if hasattr(net.b, 'shape') else net.b[j]
-                    else:
-                        b = None
-                    
-                    if W is not None and b is not None:
-                        if isinstance(W, np.ndarray) and isinstance(b, np.ndarray):
-                            state_dict[f'network.{j*2}.weight'] = torch.tensor(W.T, dtype=torch.float32)
-                            state_dict[f'network.{j*2}.bias'] = torch.tensor(b.flatten(), dtype=torch.float32)
-                            layer_sizes.append(W.shape[0])
+                model.eval()
+                models.append(model)
                 
-                if state_dict:
-                    model = PINNModel(layer_sizes)
-                    model.load_state_dict(state_dict, strict=False)
-                    model.eval()
-                    models.append(model)
-                    
             except Exception as e:
+                st.warning(f"⚠️ Model {i+1} loading error: {e}")
                 continue
         
         return models, param_max, param_min
     
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        st.error(f"Error loading .mat file: {e}")
         return None, None, None
 
 
 @st.cache_resource
 def load_gmm_models():
-    if not os.path.exists("GMM_Turkie_2025.mat"):
+    if not os.path.exists("GMM_Turkie_2025_weights.mat"):
         try:
-            url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025.mat"
-            urllib.request.urlretrieve(url, "GMM_Turkie_2025.mat")
-            st.info("Model file downloaded successfully.")
+            url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025_weights.mat"
+            urllib.request.urlretrieve(url, "GMM_Turkie_2025_weights.mat")
+            st.info("✅ Model weights downloaded successfully.")
         except Exception as e:
-            st.error(f"Could not download model file: {e}")
+            st.error(f"❌ Could not download model file: {e}")
             return None, None, None
     
-    models, param_max, param_min = load_models_from_mat("GMM_Turkie_2025.mat")
+    models, param_max, param_min = load_models_from_mat("GMM_Turkie_2025_weights.mat")
     return models, param_max, param_min
 
 
@@ -175,10 +143,10 @@ def normalize_inputs(inputs, param_min, param_max):
 
 
 def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
-    inputs = np.array([fd, fm, mw, rjb, vs30], dtype=np.float32).reshape(-1, 1)
+    inputs = np.array([fd, fm, mw, rjb, vs30], dtype=np.float32).reshape(1, -1)
     
-    inputs_norm = normalize_inputs(inputs, param_min.reshape(-1, 1), param_max.reshape(-1, 1))
-    inputs_tensor = torch.tensor(inputs_norm.T, dtype=torch.float32)
+    inputs_norm = normalize_inputs(inputs, param_min.reshape(1, -1), param_max.reshape(1, -1))
+    inputs_tensor = torch.tensor(inputs_norm, dtype=torch.float32)
     
     outputs_mean = np.zeros(25)
     for model in models:
@@ -264,7 +232,7 @@ def main():
         
         if models is None or len(models) == 0:
             st.error("Failed to load models. Please check the file path.")
-            st.info("Make sure GMM_Turkie_2025.mat is in the same folder.")
+            st.info("Make sure GMM_Turkie_2025_weights.mat is in the same folder.")
             return
         
         st.success(f"✅ Loaded {len(models)} ensemble models")
