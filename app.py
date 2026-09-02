@@ -98,7 +98,6 @@ def load_models_from_mat(weights_file):
             net_struct = net_save[i]
             
             try:
-                # Get input size
                 input_size = net_struct['inputs'][0,0][0][0][0][0][0][0][0][0]
                 layer_sizes = [input_size]
                 
@@ -134,11 +133,13 @@ def load_models_from_mat(weights_file):
 
 @st.cache_resource
 def load_gmm_models():
+    # Check if file exists locally, if not download from GitHub (CORRECTED REPO)
     if not os.path.exists("GMM_Turkie_2025.mat"):
         try:
-            url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2025/main/GUI_All_Params/GMM_Turkie_2025.mat"
+            # !!! CHANGED THE URL TO THE NEW REPOSITORY !!!
+            url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025.mat"
             urllib.request.urlretrieve(url, "GMM_Turkie_2025.mat")
-            st.info("Model file downloaded successfully.")
+            st.info("Model file downloaded successfully from the new repository.")
         except Exception as e:
             st.error(f"Could not download model file: {e}")
             return None, None, None
