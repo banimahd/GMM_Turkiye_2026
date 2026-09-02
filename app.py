@@ -70,17 +70,31 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-class SimpleNN(nn.Module):
-    def __init__(self, input_size=5, hidden_size=20, output_size=25):
-        super(SimpleNN, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, output_size)
-        self.tanh = nn.Tanh()
+def build_model_from_weights(layer_sizes, weights_list, biases_list):
+    """Build a PyTorch model from MATLAB weights and biases"""
     
-    def forward(self, x):
-        x = self.tanh(self.fc1(x))
-        x = self.fc2(x)
-        return x
+    layers = []
+    for i in range(len(layer_sizes) - 1):
+        layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
+        if i < len(layer_sizes) - 2:
+            layers.append(nn.Tanh())
+    
+    model = nn.Sequential(*layers)
+    
+    # Set weights and biases
+    with torch.no_grad():
+        for i in range(len(weights_list)):
+            # Get weights and biases from MATLAB
+            W = weights_list[i]
+            b = biases_list[i].flatten()
+            
+            # Calculate layer index in PyTorch (each Linear layer is at even index)
+            layer_idx = i * 2
+            if layer_idx < len(model):
+                model[layer_idx].weight.data = torch.tensor(W.T, dtype=torch.float32)
+                model[layer_idx].bias.data = torch.tensor(b, dtype=torch.float32)
+    
+    return model
 
 
 def load_models_from_mat(weights_file):
@@ -89,6 +103,14 @@ def load_models_from_mat(weights_file):
         
         param_max = data['Param_Max'].flatten()
         param_min = data['Param_Min'].flatten()
+        
+        # Check if we have the new format with layer_sizes
+        if 'layer_sizes' in data:
+            layer_sizes_list = data['layer_sizes'][0]
+        else:
+            # Default: 5 inputs, 20 hidden, 25 outputs
+            layer_sizes_list = [[5, 20, 25] for _ in range(10)]
+        
         weights_list = data['weights_list'][0]
         biases_list = data['biases_list'][0]
         
@@ -96,19 +118,28 @@ def load_models_from_mat(weights_file):
         
         for i in range(len(weights_list)):
             try:
-                W1 = weights_list[i][0]
-                b1 = biases_list[i][0].flatten()
-                W2 = weights_list[i][1]
-                b2 = biases_list[i][1].flatten()
+                # Get layer sizes for this model
+                if isinstance(layer_sizes_list[i], np.ndarray):
+                    sizes = layer_sizes_list[i].flatten().tolist()
+                else:
+                    sizes = layer_sizes_list[i]
                 
-                model = SimpleNN(input_size=5, hidden_size=W1.shape[0], output_size=W2.shape[0])
+                # Get weights and biases for each layer
+                layer_weights = weights_list[i]
+                layer_biases = biases_list[i]
                 
-                with torch.no_grad():
-                    model.fc1.weight.data = torch.tensor(W1, dtype=torch.float32)
-                    model.fc1.bias.data = torch.tensor(b1, dtype=torch.float32)
-                    model.fc2.weight.data = torch.tensor(W2, dtype=torch.float32)
-                    model.fc2.bias.data = torch.tensor(b2, dtype=torch.float32)
+                # Convert to list if needed
+                if isinstance(layer_weights, np.ndarray) and layer_weights.size == 1:
+                    layer_weights = [layer_weights.item()]
+                elif not isinstance(layer_weights, list):
+                    layer_weights = [layer_weights]
                 
+                if isinstance(layer_biases, np.ndarray) and layer_biases.size == 1:
+                    layer_biases = [layer_biases.item()]
+                elif not isinstance(layer_biases, list):
+                    layer_biases = [layer_biases]
+                
+                model = build_model_from_weights(sizes, layer_weights, layer_biases)
                 model.eval()
                 models.append(model)
                 
