@@ -93,30 +93,35 @@ def load_models_from_mat(weights_file):
         net_save = data['Net_Save'][0]
         
         models = []
+        
         for i in range(len(net_save)):
             net_struct = net_save[i]
             
             try:
-                # Get input size from network
+                # Get input size
                 input_size = net_struct['inputs'][0,0][0][0][0][0][0][0][0][0]
                 layer_sizes = [input_size]
                 
                 state_dict = {}
                 for j in range(len(net_struct['layers'][0])):
                     layer = net_struct['layers'][0][j]
+                    
                     if 'weights' in layer.dtype.names and 'biases' in layer.dtype.names:
                         W = layer['weights'][0,0]
                         b = layer['biases'][0,0]
+                        
                         if W is not None and b is not None:
                             if isinstance(W, np.ndarray) and isinstance(b, np.ndarray):
                                 state_dict[f'network.{j*2}.weight'] = torch.tensor(W.T, dtype=torch.float32)
                                 state_dict[f'network.{j*2}.bias'] = torch.tensor(b.flatten(), dtype=torch.float32)
                                 layer_sizes.append(W.shape[0])
                 
-                model = PINNModel(layer_sizes)
-                model.load_state_dict(state_dict, strict=False)
-                model.eval()
-                models.append(model)
+                if state_dict:
+                    model = PINNModel(layer_sizes)
+                    model.load_state_dict(state_dict, strict=False)
+                    model.eval()
+                    models.append(model)
+                    
             except Exception as e:
                 continue
         
@@ -129,7 +134,6 @@ def load_models_from_mat(weights_file):
 
 @st.cache_resource
 def load_gmm_models():
-    # Check if file exists locally, if not download from GitHub
     if not os.path.exists("GMM_Turkie_2025.mat"):
         try:
             url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2025/main/GUI_All_Params/GMM_Turkie_2025.mat"
@@ -148,7 +152,6 @@ def normalize_inputs(inputs, param_min, param_max):
 
 
 def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
-    # Order: [FD; FM; Mw; RJB; VS30]
     inputs = np.array([fd, fm, mw, rjb, vs30], dtype=np.float32).reshape(-1, 1)
     
     inputs_norm = normalize_inputs(inputs, param_min.reshape(-1, 1), param_max.reshape(-1, 1))
@@ -160,7 +163,6 @@ def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
             output = model(inputs_tensor).numpy().flatten()
             outputs_mean += output / len(models)
     
-    # 2 decimal places
     pga = round(np.exp(outputs_mean[0]) * 986, 2)
     pgv = round(np.exp(outputs_mean[1]), 2)
     ia = round(np.exp(outputs_mean[2]), 2)
@@ -237,8 +239,9 @@ def main():
     with st.spinner("Loading GMM models..."):
         models, param_max, param_min = load_gmm_models()
         
-        if models is None:
+        if models is None or len(models) == 0:
             st.error("Failed to load models. Please check the file path.")
+            st.info("Make sure GMM_Turkie_2025.mat is in the same folder.")
             return
         
         st.success(f"✅ Loaded {len(models)} ensemble models")
@@ -274,7 +277,6 @@ def main():
     with col1:
         st.markdown('<p class="section-header">📤 Outputs</p>', unsafe_allow_html=True)
         
-        # Row 1: PGA, PGV, Ia
         row1 = st.columns(3)
         outputs_row1 = [
             ('PGA', 'cm/s²', 'output_PGA'),
@@ -288,7 +290,6 @@ def main():
                 st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
                 st.markdown(f'<p class="output-unit">{unit}</p>', unsafe_allow_html=True)
         
-        # Row 2: D5-75, D5-95, Tm
         row2 = st.columns(3)
         outputs_row2 = [
             ('D5-75', 's', 'output_D5-75'),
@@ -302,7 +303,6 @@ def main():
                 st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
                 st.markdown(f'<p class="output-unit">{unit}</p>', unsafe_allow_html=True)
         
-        # Row 3: CAV
         row3 = st.columns(1)
         val = st.session_state.get('output_CAV', 0)
         with row3[0]:
