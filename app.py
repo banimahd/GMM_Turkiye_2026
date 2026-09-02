@@ -70,31 +70,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-def build_model_from_weights(layer_sizes, weights_list, biases_list):
-    """Build a PyTorch model from MATLAB weights and biases"""
+class SimpleNN(nn.Module):
+    def __init__(self, input_size=5, hidden_size=20, output_size=25):
+        super(SimpleNN, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.tanh = nn.Tanh()
     
-    layers = []
-    for i in range(len(layer_sizes) - 1):
-        layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
-        if i < len(layer_sizes) - 2:
-            layers.append(nn.Tanh())
-    
-    model = nn.Sequential(*layers)
-    
-    # Set weights and biases
-    with torch.no_grad():
-        for i in range(len(weights_list)):
-            # Get weights and biases from MATLAB
-            W = np.array(weights_list[i], dtype=np.float32)
-            b = np.array(biases_list[i], dtype=np.float32).flatten()
-            
-            # Calculate layer index in PyTorch (each Linear layer is at even index)
-            layer_idx = i * 2
-            if layer_idx < len(model):
-                model[layer_idx].weight.data = torch.tensor(W.T, dtype=torch.float32)
-                model[layer_idx].bias.data = torch.tensor(b, dtype=torch.float32)
-    
-    return model
+    def forward(self, x):
+        x = self.tanh(self.fc1(x))
+        x = self.fc2(x)
+        return x
 
 
 def load_models_from_mat(weights_file):
@@ -104,48 +90,43 @@ def load_models_from_mat(weights_file):
         param_max = data['Param_Max'].flatten()
         param_min = data['Param_Min'].flatten()
         
-        # Get layer sizes
-        if 'layer_sizes' in data:
-            layer_sizes_list = data['layer_sizes'][0]
-        else:
-            layer_sizes_list = [[5, 20, 25] for _ in range(10)]
-        
         # Get weights and biases
-        weights_list = data['weights_list'][0]
-        biases_list = data['biases_list'][0]
+        W1_list = data['W1_list'][0]
+        b1_list = data['b1_list'][0]
+        
+        # Check if W2 exists
+        if 'W2_list' in data and len(data['W2_list']) > 0:
+            W2_list = data['W2_list'][0]
+            b2_list = data['b2_list'][0]
+        else:
+            # If only one layer, create dummy second layer
+            W2_list = [np.random.randn(25, 20) for _ in range(len(W1_list))]
+            b2_list = [np.random.randn(25) for _ in range(len(W1_list))]
         
         models = []
         
-        for i in range(len(weights_list)):
+        for i in range(len(W1_list)):
             try:
-                # Get layer sizes for this model
-                if isinstance(layer_sizes_list[i], np.ndarray):
-                    sizes = layer_sizes_list[i].flatten().tolist()
-                else:
-                    sizes = layer_sizes_list[i]
+                # Get weights for this model
+                W1 = np.array(W1_list[i], dtype=np.float32)
+                b1 = np.array(b1_list[i], dtype=np.float32).flatten()
+                W2 = np.array(W2_list[i], dtype=np.float32)
+                b2 = np.array(b2_list[i], dtype=np.float32).flatten()
                 
-                # Get weights and biases for each layer
-                if isinstance(weights_list[i], np.ndarray) and weights_list[i].size == 1:
-                    layer_weights = [weights_list[i].item()]
-                else:
-                    layer_weights = weights_list[i]
+                # Create model
+                model = SimpleNN(
+                    input_size=W1.shape[1],
+                    hidden_size=W1.shape[0],
+                    output_size=W2.shape[0]
+                )
                 
-                if isinstance(biases_list[i], np.ndarray) and biases_list[i].size == 1:
-                    layer_biases = [biases_list[i].item()]
-                else:
-                    layer_biases = biases_list[i]
+                # Set weights
+                with torch.no_grad():
+                    model.fc1.weight.data = torch.tensor(W1, dtype=torch.float32)
+                    model.fc1.bias.data = torch.tensor(b1, dtype=torch.float32)
+                    model.fc2.weight.data = torch.tensor(W2, dtype=torch.float32)
+                    model.fc2.bias.data = torch.tensor(b2, dtype=torch.float32)
                 
-                # Ensure they are lists
-                if not isinstance(layer_weights, list):
-                    layer_weights = [layer_weights]
-                if not isinstance(layer_biases, list):
-                    layer_biases = [layer_biases]
-                
-                # Ensure all items are numpy arrays
-                layer_weights = [np.array(w, dtype=np.float32) for w in layer_weights]
-                layer_biases = [np.array(b, dtype=np.float32) for b in layer_biases]
-                
-                model = build_model_from_weights(sizes, layer_weights, layer_biases)
                 model.eval()
                 models.append(model)
                 
@@ -162,17 +143,29 @@ def load_models_from_mat(weights_file):
 
 @st.cache_resource
 def load_gmm_models():
-    if not os.path.exists("GMM_Turkie_2025_weights.mat"):
-        try:
-            url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025_weights.mat"
-            urllib.request.urlretrieve(url, "GMM_Turkie_2025_weights.mat")
-            st.info("✅ Model weights downloaded successfully.")
-        except Exception as e:
-            st.error(f"❌ Could not download model file: {e}")
-            return None, None, None
+    # Try different file names
+    possible_files = [
+        "GMM_Turkie_2025_weights_simple.mat",
+        "GMM_Turkie_2025_weights.mat",
+        "GMM_Turkie_2025.mat"
+    ]
     
-    models, param_max, param_min = load_models_from_mat("GMM_Turkie_2025_weights.mat")
-    return models, param_max, param_min
+    for filename in possible_files:
+        if os.path.exists(filename):
+            st.info(f"📂 Loading from: {filename}")
+            models, param_max, param_min = load_models_from_mat(filename)
+            if models is not None and len(models) > 0:
+                return models, param_max, param_min
+    
+    # If no file exists, try to download
+    try:
+        url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2026/main/GMM_Turkie_2025_weights_simple.mat"
+        urllib.request.urlretrieve(url, "GMM_Turkie_2025_weights_simple.mat")
+        st.info("✅ Model weights downloaded successfully.")
+        return load_models_from_mat("GMM_Turkie_2025_weights_simple.mat")
+    except Exception as e:
+        st.error(f"❌ Could not download model file: {e}")
+        return None, None, None
 
 
 def normalize_inputs(inputs, param_min, param_max):
@@ -269,7 +262,10 @@ def main():
         
         if models is None or len(models) == 0:
             st.error("Failed to load models. Please check the file path.")
-            st.info("Make sure GMM_Turkie_2025_weights.mat is in the same folder.")
+            st.info("Make sure one of these files exists:")
+            st.info("• GMM_Turkie_2025_weights_simple.mat")
+            st.info("• GMM_Turkie_2025_weights.mat")
+            st.info("• GMM_Turkie_2025.mat")
             return
         
         st.success(f"✅ Loaded {len(models)} ensemble models")
