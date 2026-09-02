@@ -160,6 +160,7 @@ def normalize_inputs(inputs, param_min, param_max):
 
 
 def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
+    # Order: [FD; FM; Mw; RJB; VS30] (MATLAB style)
     inputs = np.array([fd, fm, mw, rjb, vs30], dtype=np.float32).reshape(1, -1)
     
     inputs_norm = normalize_inputs(inputs, param_min.reshape(1, -1), param_max.reshape(1, -1))
@@ -171,9 +172,12 @@ def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
             output = model(inputs_tensor).numpy().flatten()
             outputs_mean += output / len(models)
     
+    # MATLAB Output order:
+    # 1: PGA, 2: PGV, 3: Ia, 4: D5-75, 5: D5-95, 6: Tm, 7: CAV
+    # 8-25: PSa values
     pga = round(np.exp(outputs_mean[0]) * 986, 2)
     pgv = round(np.exp(outputs_mean[1]), 2)
-    ia = round(np.exp(outputs_mean[2]), 2)
+    ia = round(np.exp(outputs_mean[2]), 3)
     d5_75 = round(np.exp(outputs_mean[3]), 2)
     d5_95 = round(np.exp(outputs_mean[4]), 2)
     tm = round(np.exp(outputs_mean[5]), 2)
@@ -249,10 +253,6 @@ def main():
         
         if models is None or len(models) == 0:
             st.error("Failed to load models. Please check the file path.")
-            st.info("Make sure one of these files exists:")
-            st.info("• GMM_Turkie_2025_weights_simple.mat")
-            st.info("• GMM_Turkie_2025_weights.mat")
-            st.info("• GMM_Turkie_2025.mat")
             return
         
         st.success(f"✅ Loaded {len(models)} ensemble models")
