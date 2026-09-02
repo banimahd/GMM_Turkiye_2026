@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import scipy.io
+import urllib.request
+import os
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -38,12 +40,6 @@ st.markdown("""
         margin-top: 0.5rem !important;
         margin-bottom: 0.5rem !important;
     }
-    .stSidebar .stMarkdown h1 {
-        font-size: 1.5rem !important;
-    }
-    .stSidebar .stMarkdown h2 {
-        font-size: 1.2rem !important;
-    }
     .stSidebar .stNumberInput label {
         font-size: 1.0rem !important;
         font-weight: 500 !important;
@@ -53,17 +49,22 @@ st.markdown("""
         font-weight: 600 !important;
         padding: 0.5rem 2rem !important;
     }
-    .stDownloadButton button {
-        font-size: 0.9rem !important;
-        font-weight: 500 !important;
-    }
     .output-label {
         color: #000000 !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        margin: 0 !important;
     }
     .output-value {
         color: #1565C0 !important;
-        font-size: 2.0rem !important;
+        font-size: 1.8rem !important;
         font-weight: 700 !important;
+        margin: 0 !important;
+    }
+    .output-unit {
+        color: #666 !important;
+        font-size: 0.8rem !important;
+        margin: 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -87,7 +88,6 @@ def load_models_from_mat(weights_file):
     try:
         data = scipy.io.loadmat(weights_file)
         
-        # Extract max/min values and network
         param_max = data['Param_Max'].flatten()
         param_min = data['Param_Min'].flatten()
         net_save = data['Net_Save'][0]
@@ -96,14 +96,11 @@ def load_models_from_mat(weights_file):
         for i in range(len(net_save)):
             net_struct = net_save[i]
             
-            # Extract weights and biases from MATLAB network
-            # This assumes a typical MATLAB feedforwardnet structure
             try:
-                # Get layer sizes
+                # Get input size from network
                 input_size = net_struct['inputs'][0,0][0][0][0][0][0][0][0][0]
                 layer_sizes = [input_size]
                 
-                # Extract weights and biases for each layer
                 state_dict = {}
                 for j in range(len(net_struct['layers'][0])):
                     layer = net_struct['layers'][0][j]
@@ -120,7 +117,7 @@ def load_models_from_mat(weights_file):
                 model.load_state_dict(state_dict, strict=False)
                 model.eval()
                 models.append(model)
-            except:
+            except Exception as e:
                 continue
         
         return models, param_max, param_min
@@ -132,17 +129,18 @@ def load_models_from_mat(weights_file):
 
 @st.cache_resource
 def load_gmm_models():
-    # Load from GitHub raw URL
-    import urllib.request
-    url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2025/main/GUI_All_Params/GMM_Turkie_2025.mat"
+    # Check if file exists locally, if not download from GitHub
+    if not os.path.exists("GMM_Turkie_2025.mat"):
+        try:
+            url = "https://raw.githubusercontent.com/banimahd/GMM_Turkiye_2025/main/GUI_All_Params/GMM_Turkie_2025.mat"
+            urllib.request.urlretrieve(url, "GMM_Turkie_2025.mat")
+            st.info("Model file downloaded successfully.")
+        except Exception as e:
+            st.error(f"Could not download model file: {e}")
+            return None, None, None
     
-    try:
-        urllib.request.urlretrieve(url, "GMM_Turkie_2025.mat")
-        models, param_max, param_min = load_models_from_mat("GMM_Turkie_2025.mat")
-        return models, param_max, param_min
-    except:
-        st.error("Could not load model file. Please check the file path.")
-        return None, None, None
+    models, param_max, param_min = load_models_from_mat("GMM_Turkie_2025.mat")
+    return models, param_max, param_min
 
 
 def normalize_inputs(inputs, param_min, param_max):
@@ -153,28 +151,25 @@ def call_back_excel(mw, vs30, rjb, fd, fm, models, param_max, param_min):
     # Order: [FD; FM; Mw; RJB; VS30]
     inputs = np.array([fd, fm, mw, rjb, vs30], dtype=np.float32).reshape(-1, 1)
     
-    # Normalize inputs
     inputs_norm = normalize_inputs(inputs, param_min.reshape(-1, 1), param_max.reshape(-1, 1))
     inputs_tensor = torch.tensor(inputs_norm.T, dtype=torch.float32)
     
-    # Ensemble prediction (10 models)
     outputs_mean = np.zeros(25)
     for model in models:
         with torch.no_grad():
             output = model(inputs_tensor).numpy().flatten()
             outputs_mean += output / len(models)
     
-    # Convert outputs (using MATLAB's exp and scaling)
-    pga = round(np.exp(outputs_mean[0]) * 986, 3)
-    pgv = round(np.exp(outputs_mean[1]), 3)
-    ia = round(np.exp(outputs_mean[2]), 3)
-    d5_75 = round(np.exp(outputs_mean[3]), 3)
-    d5_95 = round(np.exp(outputs_mean[4]), 3)
-    tm = round(np.exp(outputs_mean[5]), 3)
-    cav = round(np.exp(outputs_mean[6]), 3)
+    # 2 decimal places
+    pga = round(np.exp(outputs_mean[0]) * 986, 2)
+    pgv = round(np.exp(outputs_mean[1]), 2)
+    ia = round(np.exp(outputs_mean[2]), 2)
+    d5_75 = round(np.exp(outputs_mean[3]), 2)
+    d5_95 = round(np.exp(outputs_mean[4]), 2)
+    tm = round(np.exp(outputs_mean[5]), 2)
+    cav = round(np.exp(outputs_mean[6]), 2)
     
-    # PSa values (scaled by 986)
-    psas = [round(np.exp(outputs_mean[i]) * 986, 5) for i in range(7, 25)]
+    psas = [round(np.exp(outputs_mean[i]) * 986, 2) for i in range(7, 25)]
     
     output = [pga, pgv, ia, d5_75, d5_95, tm, cav] + psas
     return np.array(output)
@@ -184,7 +179,6 @@ def plot_data(ax, outputs):
     periods = np.array([0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5,
                         0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4])
     
-    # PSa values are from index 7 to 24
     y = np.array(outputs[7:25])
     y = np.maximum(y, 1e-10)
     
@@ -200,7 +194,6 @@ def plot_data(ax, outputs):
     
     ax.tick_params(axis='y', labelsize=20)
     
-    # Dynamic y-limits
     if np.any(y > 0):
         min_val = np.min(y[y > 0]) * 0.8
         max_val = np.max(y) * 1.5
@@ -269,7 +262,6 @@ def main():
                 st.session_state['output'] = output
                 st.session_state['calculated'] = True
                 
-                # Store individual values
                 names = ['PGA', 'PGV', 'Ia', 'D5-75', 'D5-95', 'Tm', 'CAV']
                 for i, name in enumerate(names):
                     st.session_state[f'output_{name}'] = output[i]
@@ -282,49 +274,41 @@ def main():
     with col1:
         st.markdown('<p class="section-header">📤 Outputs</p>', unsafe_allow_html=True)
         
-        # PGA, PGV, Ia
-        col_a1, col_a2, col_a3 = st.columns(3)
-        with col_a1:
-            pga = st.session_state.get('output_PGA', 0)
-            st.markdown(f'<p style="font-size:0.9rem; font-weight:600; margin:0;">PGA</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{pga:.3f}</p>', unsafe_allow_html=True)
-            st.caption("cm/s²")
-        with col_a2:
-            pgv = st.session_state.get('output_PGV', 0)
-            st.markdown(f'<p style="font-size:0.9rem; font-weight:600; margin:0;">PGV</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{pgv:.3f}</p>', unsafe_allow_html=True)
-            st.caption("cm/s")
-        with col_a3:
-            ia = st.session_state.get('output_Ia', 0)
-            st.markdown(f'<p style="font-size:0.9rem; font-weight:600; margin:0;">Ia</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{ia:.3f}</p>', unsafe_allow_html=True)
-            st.caption("cm/s")
+        # Row 1: PGA, PGV, Ia
+        row1 = st.columns(3)
+        outputs_row1 = [
+            ('PGA', 'cm/s²', 'output_PGA'),
+            ('PGV', 'cm/s', 'output_PGV'),
+            ('Ia', 'cm/s', 'output_Ia')
+        ]
+        for col, (name, unit, key) in zip(row1, outputs_row1):
+            val = st.session_state.get(key, 0)
+            with col:
+                st.markdown(f'<p class="output-label">{name}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p class="output-unit">{unit}</p>', unsafe_allow_html=True)
         
-        # D5-75, D5-95, Tm
-        col_b1, col_b2, col_b3 = st.columns(3)
-        with col_b1:
-            d5_75 = st.session_state.get('output_D5-75', 0)
-            st.markdown(f'<p style="font-size:0.9rem; font-weight:600; margin:0;">D5-75</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{d5_75:.3f}</p>', unsafe_allow_html=True)
-            st.caption("s")
-        with col_b2:
-            d5_95 = st.session_state.get('output_D5-95', 0)
-            st.markdown(f'<p style="font-size:0.9rem; font-weight:600; margin:0;">D5-95</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{d5_95:.3f}</p>', unsafe_allow_html=True)
-            st.caption("s")
-        with col_b3:
-            tm = st.session_state.get('output_Tm', 0)
-            st.markdown(f'<p style="font-size:0.9rem; font-weight:600; margin:0;">Tm</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{tm:.3f}</p>', unsafe_allow_html=True)
-            st.caption("s")
+        # Row 2: D5-75, D5-95, Tm
+        row2 = st.columns(3)
+        outputs_row2 = [
+            ('D5-75', 's', 'output_D5-75'),
+            ('D5-95', 's', 'output_D5-95'),
+            ('Tm', 's', 'output_Tm')
+        ]
+        for col, (name, unit, key) in zip(row2, outputs_row2):
+            val = st.session_state.get(key, 0)
+            with col:
+                st.markdown(f'<p class="output-label">{name}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+                st.markdown(f'<p class="output-unit">{unit}</p>', unsafe_allow_html=True)
         
-        # CAV
-        col_c1, col_c2 = st.columns(2)
-        with col_c1:
-            cav = st.session_state.get('output_CAV', 0)
-            st.markdown(f'<p style="font-size:0.9rem; font-weight:600; margin:0;">CAV</p>', unsafe_allow_html=True)
-            st.markdown(f'<p class="output-value">{cav:.3f}</p>', unsafe_allow_html=True)
-            st.caption("cm/s")
+        # Row 3: CAV
+        row3 = st.columns(1)
+        val = st.session_state.get('output_CAV', 0)
+        with row3[0]:
+            st.markdown(f'<p class="output-label">CAV</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-value">{val:.2f}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="output-unit">cm/s</p>', unsafe_allow_html=True)
         
         st.markdown("---")
         st.markdown('<p class="section-header">📁 Excel Processor</p>', unsafe_allow_html=True)
@@ -333,7 +317,6 @@ def main():
         if uploaded_file is not None:
             try:
                 df = pd.read_excel(uploaded_file, header=0)
-                # Check if first row is numeric
                 test_row = df.iloc[0].values
                 float(test_row[0])
             except:
