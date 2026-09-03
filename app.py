@@ -43,19 +43,31 @@ st.markdown("""
         margin-top: 1rem;
         margin-bottom: 0.5rem;
     }
-    .result-box {
+    .result-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
         font-family: 'Times New Roman', serif;
-        background-color: #e8f0fe;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #d0d0d0;
         font-size: 1.1rem;
-        text-align: right;
+        font-weight: bold;
     }
     .result-label {
         font-family: 'Times New Roman', serif;
         font-size: 1.1rem;
         font-weight: bold;
+        min-width: 120px;
+    }
+    .result-box {
+        font-family: 'Times New Roman', serif;
+        background-color: #e8f0fe;
+        padding: 6px 12px;
+        border-radius: 5px;
+        border: 1px solid #d0d0d0;
+        font-size: 1.1rem;
+        text-align: right;
+        min-width: 80px;
+        display: inline-block;
+        margin-left: 10px;
     }
     .stButton button {
         font-family: 'Times New Roman', serif;
@@ -380,34 +392,70 @@ def main():
                 with st.spinner("Predicting..."):
                     results = predictor.predict(fd, fm_val, mw, rjb, vs30)
 
-                    # Display results in single column
+                    # Display results with label and box side by side
+                    
                     # 1. PGA
-                    st.markdown('<div class="result-label">PGA (cm/s²)</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-box">{results["PGA"]:.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="result-row">'
+                        f'<span class="result-label">PGA (cm/s²)</span>'
+                        f'<span class="result-box">{results["PGA"]:.2f}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                     # 2. PGV
-                    st.markdown('<div class="result-label">PGV (cm/s)</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-box">{results["PGV"]:.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="result-row">'
+                        f'<span class="result-label">PGV (cm/s)</span>'
+                        f'<span class="result-box">{results["PGV"]:.2f}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                     # 3. CAV
-                    st.markdown('<div class="result-label">CAV (cm/s)</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-box">{results["CAV"]:.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="result-row">'
+                        f'<span class="result-label">CAV (cm/s)</span>'
+                        f'<span class="result-box">{results["CAV"]:.2f}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                     # 4. Ia
-                    st.markdown('<div class="result-label">Ia (cm/s)</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-box">{results["Ia"]:.3f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="result-row">'
+                        f'<span class="result-label">Ia (cm/s)</span>'
+                        f'<span class="result-box">{results["Ia"]:.3f}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                     # 5. Tm
-                    st.markdown('<div class="result-label">Tm (s)</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-box">{results["T_m"]:.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="result-row">'
+                        f'<span class="result-label">Tm (s)</span>'
+                        f'<span class="result-box">{results["T_m"]:.2f}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                     # 6. D 5%-75%
-                    st.markdown('<div class="result-label">D 5%-75% (s)</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-box">{results["D_5_75"]:.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="result-row">'
+                        f'<span class="result-label">D 5%-75% (s)</span>'
+                        f'<span class="result-box">{results["D_5_75"]:.2f}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                     # 7. D 5%-95%
-                    st.markdown('<div class="result-label">D 5%-95% (s)</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-box">{results["D_5_95"]:.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        f'<div class="result-row">'
+                        f'<span class="result-label">D 5%-95% (s)</span>'
+                        f'<span class="result-box">{results["D_5_95"]:.2f}</span>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
 
                 # Plot spectrum
                 st.markdown('<div class="sub-header">📈 Spectral Acceleration vs Period</div>', unsafe_allow_html=True)
