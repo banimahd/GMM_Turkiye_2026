@@ -78,14 +78,6 @@ st.markdown("""
         font-size: 1.1rem !important;
         font-weight: bold !important;
     }
-    .credit {
-        font-family: 'Times New Roman', serif;
-        font-size: 0.9rem;
-        color: #888888;
-        text-align: right;
-        margin-top: 0.5rem;
-        font-style: italic;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -388,39 +380,39 @@ def main():
                 with st.spinner("Predicting..."):
                     results = predictor.predict(fd, fm_val, mw, rjb, vs30)
 
-                    # Display results in two columns
-                    col_left, col_right = st.columns(2)
+                    # Display results in single column
+                    # 1. PGA
+                    st.markdown('<div class="result-label">PGA (cm/s²)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="result-box">{results["PGA"]:.2f}</div>', unsafe_allow_html=True)
 
-                    with col_left:
-                        st.markdown('<div class="result-label">PGA (cm/s²)</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="result-box">{results["PGA"]:.2f}</div>', unsafe_allow_html=True)
+                    # 2. PGV
+                    st.markdown('<div class="result-label">PGV (cm/s)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="result-box">{results["PGV"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">Ia (cm/s)</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="result-box">{results["Ia"]:.3f}</div>', unsafe_allow_html=True)
+                    # 3. CAV
+                    st.markdown('<div class="result-label">CAV (cm/s)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="result-box">{results["CAV"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">D 5%-95% (s)</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="result-box">{results["D_5_95"]:.2f}</div>', unsafe_allow_html=True)
+                    # 4. Ia
+                    st.markdown('<div class="result-label">Ia (cm/s)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="result-box">{results["Ia"]:.3f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">CAV (cm/s)</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="result-box">{results["CAV"]:.2f}</div>', unsafe_allow_html=True)
+                    # 5. Tm
+                    st.markdown('<div class="result-label">Tm (s)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="result-box">{results["T_m"]:.2f}</div>', unsafe_allow_html=True)
 
-                    with col_right:
-                        st.markdown('<div class="result-label">PGV (cm/s)</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="result-box">{results["PGV"]:.2f}</div>', unsafe_allow_html=True)
+                    # 6. D 5%-75%
+                    st.markdown('<div class="result-label">D 5%-75% (s)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="result-box">{results["D_5_75"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">Tm (s)</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="result-box">{results["T_m"]:.2f}</div>', unsafe_allow_html=True)
-
-                        st.markdown('<div class="result-label">D 5%-75% (s)</div>', unsafe_allow_html=True)
-                        st.markdown(f'<div class="result-box">{results["D_5_75"]:.2f}</div>', unsafe_allow_html=True)
+                    # 7. D 5%-95%
+                    st.markdown('<div class="result-label">D 5%-95% (s)</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="result-box">{results["D_5_95"]:.2f}</div>', unsafe_allow_html=True)
 
                 # Plot spectrum
                 st.markdown('<div class="sub-header">📈 Spectral Acceleration vs Period</div>', unsafe_allow_html=True)
                 fig = plot_spectra(results)
                 st.pyplot(fig)
-                
-                # Credit below the plot
-                st.markdown('<div class="credit">Made by Amir Banimahd</div>', unsafe_allow_html=True)
 
     # ========================================================================
     # TAB 2: Batch Processing
@@ -465,7 +457,7 @@ def main():
 
                         # Create output DataFrame
                         output_cols = ['Mw', 'VS30', 'RJB', 'FD', 'FM',
-                                       'PGA', 'PGV', 'Ia', 'D 5-75', 'D 5-95', 'Tm', 'CAV',
+                                       'PGA', 'PGV', 'CAV', 'Ia', 'Tm', 'D 5-75', 'D 5-95',
                                        'PSa_003sec', 'PSa_005sec', 'PSa_0075sec', 'PSa_01sec',
                                        'PSa_015sec', 'PSa_02sec', 'PSa_025sec', 'PSa_03sec',
                                        'PSa_04sec', 'PSa_05sec', 'PSa_075sec', 'PSa_10sec',
@@ -481,8 +473,7 @@ def main():
                                 row.iloc[2] if len(row) > 2 else 0,
                                 row.iloc[3] if len(row) > 3 else 0,
                                 row.iloc[4] if len(row) > 4 else 1,
-                                r['PGA'], r['PGV'], r['Ia'], r['D_5_75'], r['D_5_95'],
-                                r['T_m'], r['CAV'],
+                                r['PGA'], r['PGV'], r['CAV'], r['Ia'], r['T_m'], r['D_5_75'], r['D_5_95'],
                                 r['PSa_003sec'], r['PSa_005sec'], r['PSa_0075sec'], r['PSa_01sec'],
                                 r['PSa_015sec'], r['PSa_02sec'], r['PSa_025sec'], r['PSa_03sec'],
                                 r['PSa_04sec'], r['PSa_05sec'], r['PSa_075sec'], r['PSa_10sec'],
@@ -531,11 +522,11 @@ def main():
         **Output Parameters:**
         - **PGA**: Peak Ground Acceleration (cm/s²)
         - **PGV**: Peak Ground Velocity (cm/s)
+        - **CAV**: Cumulative Absolute Velocity (cm/s)
         - **Ia**: Arias Intensity (cm/s)
+        - **Tm**: Mean Period (s)
         - **D 5%-75%**: Duration between 5% and 75% (s)
         - **D 5%-95%**: Duration between 5% and 95% (s)
-        - **Tm**: Mean Period (s)
-        - **CAV**: Cumulative Absolute Velocity (cm/s)
         - **PSa**: Spectral Accelerations at 18 periods (cm/s²)
 
         **Developer:** Amir Banimahd
