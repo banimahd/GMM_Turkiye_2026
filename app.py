@@ -111,6 +111,16 @@ st.markdown("""
     .reference a:hover {
         text-decoration: underline;
     }
+    .developer {
+        font-family: 'Times New Roman', serif;
+        font-size: 0.95rem;
+        color: #555;
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 10px;
+        border-top: 1px solid #ddd;
+        font-style: italic;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -613,6 +623,13 @@ def main():
         <strong>Volume:</strong> 175, <strong>Issue:</strong> 114599<br>
         <strong>Year:</strong> 2026<br>
         <strong>Link:</strong> <a href="https://www.sciencedirect.com/science/article/pii/S0952197626008808" target="_blank">https://www.sciencedirect.com/science/article/pii/S0952197626008808</a>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Developer section
+        st.markdown("""
+        <div class="developer">
+        <strong>👨‍💻 Developer:</strong> Seyed Amir Banimahd
         </div>
         """, unsafe_allow_html=True)
 
