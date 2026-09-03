@@ -95,13 +95,13 @@ st.markdown("""
     }
     .reference {
         font-family: 'Times New Roman', serif;
-        font-size: 0.95rem;
+        font-size: 1rem;
         color: #333;
-        line-height: 1.6;
-        padding: 10px;
-        background-color: #f5f5f5;
-        border-radius: 5px;
-        border-left: 4px solid #2196F3;
+        line-height: 1.8;
+        padding: 12px 16px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        border: 1px solid #e0e0e0;
         margin-top: 15px;
     }
     .reference a {
@@ -113,13 +113,12 @@ st.markdown("""
     }
     .developer {
         font-family: 'Times New Roman', serif;
-        font-size: 0.95rem;
-        color: #555;
+        font-size: 1rem;
+        color: #333;
         text-align: center;
-        margin-top: 20px;
+        margin-top: 15px;
         padding-top: 10px;
-        border-top: 1px solid #ddd;
-        font-style: italic;
+        border-top: 1px solid #e0e0e0;
     }
 </style>
 """, unsafe_allow_html=True)
