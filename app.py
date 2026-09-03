@@ -2,6 +2,9 @@
 GMM TURKIYE 2026 - STREAMLIT APP
 ===================================
 Ground Motion Model for Turkiye (2026)
+Reference: Banimahd, S.A., Karimzadeh, S. (2026). Artificial neural network-based 
+non-parametric ground motion models for multiple intensity measures in Türkiye. 
+Engineering Applications of Artificial Intelligence, 175, 114599.
 """
 
 import streamlit as st
@@ -90,6 +93,24 @@ st.markdown("""
         font-size: 1.1rem !important;
         font-weight: bold !important;
     }
+    .reference {
+        font-family: 'Times New Roman', serif;
+        font-size: 0.95rem;
+        color: #333;
+        line-height: 1.6;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 5px;
+        border-left: 4px solid #2196F3;
+        margin-top: 15px;
+    }
+    .reference a {
+        color: #2196F3;
+        text-decoration: none;
+    }
+    .reference a:hover {
+        text-decoration: underline;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -132,7 +153,6 @@ class GMMPredictor:
 
             if len(self.weights) > 0:
                 self.is_loaded = True
-                st.success(f"✅ Loaded {len(self.weights)} networks")
 
         except Exception as e:
             st.error(f"Error loading weights: {e}")
@@ -581,9 +601,20 @@ def main():
         - **D 5%-75%**: Duration between 5% and 75% (s)
         - **D 5%-95%**: Duration between 5% and 95% (s)
         - **PSa**: Spectral Accelerations at 18 periods (cm/s²)
-
-        **Developer:** Amir Banimahd
         """)
+
+        # Reference section
+        st.markdown("""
+        <div class="reference">
+        <strong>📄 Reference:</strong><br>
+        <strong>Title:</strong> Artificial neural network-based non-parametric ground motion models for multiple intensity measures in Türkiye<br>
+        <strong>Authors:</strong> Seyed Amir Banimahd, Shaghayegh Karimzadeh<br>
+        <strong>Journal:</strong> Engineering Applications of Artificial Intelligence<br>
+        <strong>Volume:</strong> 175, <strong>Issue:</strong> 114599<br>
+        <strong>Year:</strong> 2026<br>
+        <strong>Link:</strong> <a href="https://www.sciencedirect.com/science/article/pii/S0952197626008808" target="_blank">https://www.sciencedirect.com/science/article/pii/S0952197626008808</a>
+        </div>
+        """, unsafe_allow_html=True)
 
         with st.expander("📊 Network Architecture"):
             st.markdown("""
