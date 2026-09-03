@@ -79,6 +79,10 @@ st.markdown("""
         font-size: 1.1rem !important;
         font-weight: bold !important;
     }
+    .stInfo {
+        font-family: 'Times New Roman', serif;
+        font-size: 1rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
