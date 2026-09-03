@@ -25,7 +25,6 @@ st.set_page_config(
 # Apply custom CSS
 st.markdown("""
 <style>
-    /* Font settings */
     @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
     
     .main-header {
@@ -78,6 +77,14 @@ st.markdown("""
         font-family: 'Times New Roman', serif;
         font-size: 1.1rem !important;
         font-weight: bold !important;
+    }
+    .credit {
+        font-family: 'Times New Roman', serif;
+        font-size: 0.9rem;
+        color: #888888;
+        text-align: right;
+        margin-top: 0.5rem;
+        font-style: italic;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -285,23 +292,16 @@ def plot_spectra(results):
     max_val = np.max(y_vals) * 1.5
     ax.set_ylim(min_val, max_val)
 
-    # Increase tick label size
     ax.tick_params(axis='both', which='major', labelsize=14, width=1.5, length=6)
     ax.tick_params(axis='both', which='minor', labelsize=12, width=1, length=4)
 
     ax.grid(True, which='both', linestyle='--', alpha=0.5, linewidth=0.8)
 
-    # Set spine width
     for spine in ax.spines.values():
         spine.set_linewidth(1.5)
 
     ax.set_facecolor('#f8f9fa')
     ax.legend(loc='best', frameon=False, fontsize=14)
-
-    ax.text(0.98, -0.15, 'Made by Amir Banimahd',
-            transform=ax.transAxes, fontsize=12,
-            verticalalignment='center', horizontalalignment='right',
-            color='#888888', style='italic')
 
     return fig
 
@@ -395,10 +395,10 @@ def main():
                         st.markdown('<div class="result-label">PGA (cm/s²)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["PGA"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">I<sub>a</sub> (cm/s)</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="result-label">Ia (cm/s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["Ia"]:.3f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">D<sub>5%-95%</sub> (s)</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="result-label">D 5%-95% (s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["D_5_95"]:.2f}</div>', unsafe_allow_html=True)
 
                         st.markdown('<div class="result-label">CAV (cm/s)</div>', unsafe_allow_html=True)
@@ -408,16 +408,19 @@ def main():
                         st.markdown('<div class="result-label">PGV (cm/s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["PGV"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">T<sub>m</sub> (s)</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="result-label">Tm (s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["T_m"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">D<sub>5%-75%</sub> (s)</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="result-label">D 5%-75% (s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["D_5_75"]:.2f}</div>', unsafe_allow_html=True)
 
                 # Plot spectrum
                 st.markdown('<div class="sub-header">📈 Spectral Acceleration vs Period</div>', unsafe_allow_html=True)
                 fig = plot_spectra(results)
                 st.pyplot(fig)
+                
+                # Credit below the plot
+                st.markdown('<div class="credit">Made by Amir Banimahd</div>', unsafe_allow_html=True)
 
     # ========================================================================
     # TAB 2: Batch Processing
@@ -462,7 +465,7 @@ def main():
 
                         # Create output DataFrame
                         output_cols = ['Mw', 'VS30', 'RJB', 'FD', 'FM',
-                                       'PGA', 'PGV', 'I_a', 'D_5-75', 'D_5-95', 'T_m', 'CAV',
+                                       'PGA', 'PGV', 'Ia', 'D 5-75', 'D 5-95', 'Tm', 'CAV',
                                        'PSa_003sec', 'PSa_005sec', 'PSa_0075sec', 'PSa_01sec',
                                        'PSa_015sec', 'PSa_02sec', 'PSa_025sec', 'PSa_03sec',
                                        'PSa_04sec', 'PSa_05sec', 'PSa_075sec', 'PSa_10sec',
@@ -492,11 +495,9 @@ def main():
 
                         st.success("✅ Processing complete!")
 
-                        # Show results
                         st.write("**Results:**")
                         st.dataframe(out_df, use_container_width=True)
 
-                        # Download button
                         csv = out_df.to_csv(index=False).encode('utf-8')
                         st.download_button(
                             label="📥 Download Results as CSV",
@@ -530,17 +531,16 @@ def main():
         **Output Parameters:**
         - **PGA**: Peak Ground Acceleration (cm/s²)
         - **PGV**: Peak Ground Velocity (cm/s)
-        - **I_a**: Arias Intensity (cm/s)
-        - **D<sub>5%-75%</sub>**: Duration between 5% and 75% (s)
-        - **D<sub>5%-95%</sub>**: Duration between 5% and 95% (s)
-        - **T_m**: Mean Period (s)
+        - **Ia**: Arias Intensity (cm/s)
+        - **D 5%-75%**: Duration between 5% and 75% (s)
+        - **D 5%-95%**: Duration between 5% and 95% (s)
+        - **Tm**: Mean Period (s)
         - **CAV**: Cumulative Absolute Velocity (cm/s)
         - **PSa**: Spectral Accelerations at 18 periods (cm/s²)
 
         **Developer:** Amir Banimahd
         """)
 
-        # Network architecture info
         with st.expander("📊 Network Architecture"):
             st.markdown("""
             - **Input Layer:** 5 parameters
