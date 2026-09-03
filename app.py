@@ -27,7 +27,7 @@ st.markdown("""
 <style>
     /* Font settings */
     @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
-
+    
     .main-header {
         font-family: 'Times New Roman', serif;
         font-size: 2.5rem;
@@ -312,9 +312,7 @@ def plot_spectra(results):
 
 def main():
     st.markdown('<div class="main-header">📊 GMM Turkiye 2026</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div style="text-align:center;margin-bottom:2rem;font-family:Times New Roman,serif;font-size:1.1rem;">Ground Motion Model for Turkiye</div>',
-        unsafe_allow_html=True)
+    st.markdown('<div style="text-align:center;margin-bottom:2rem;font-family:Times New Roman,serif;font-size:1.1rem;">Ground Motion Model for Turkiye</div>', unsafe_allow_html=True)
 
     # Initialize predictor in session state
     if 'predictor' not in st.session_state:
@@ -463,8 +461,8 @@ def main():
                                 results_list.append(GMMPredictor._get_default_outputs())
 
                         # Create output DataFrame
-                        output_cols = ['Mw', 'VS30', 'RJB', 'FD', 'FM',
-                                       'PGA', 'PGV', 'Ia', 'D5-75', 'D5-95', 'Tm', 'CAV',
+                        output_cols = ['M_w', 'V_S30', 'R_JB', 'FD', 'FM',
+                                       'PGA', 'PGV', 'I_a', 'D_5-75', 'D_5-95', 'T_m', 'CAV',
                                        'PSa_003sec', 'PSa_005sec', 'PSa_0075sec', 'PSa_01sec',
                                        'PSa_015sec', 'PSa_02sec', 'PSa_025sec', 'PSa_03sec',
                                        'PSa_04sec', 'PSa_05sec', 'PSa_075sec', 'PSa_10sec',
