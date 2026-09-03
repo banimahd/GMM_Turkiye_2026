@@ -367,10 +367,10 @@ def main():
                 fd = st.slider(
                     "FD (km)",
                     min_value=0.0,
-                    max_value=100.0,
+                    max_value=35.0,
                     value=3.0,
                     step=0.5,
-                    help="Fault Distance (0 - 100 km)"
+                    help="Focal Depth (0 - 35 km)"
                 )
 
                 fm = st.selectbox(
@@ -473,7 +473,7 @@ def main():
         - **Mw** (Magnitude)
         - **VS30** (Shear Wave Velocity)
         - **RJB** (Joyner-Boore Distance)
-        - **FD** (Fault Distance)
+        - **FD** (Focal Depth, 0-35 km)
         - **FM** (Fault Mechanism: 1=Normal, 2=Reverse, 3=Strike Slip)
         """)
 
@@ -497,6 +497,11 @@ def main():
                                 rjb = float(row.iloc[2]) if len(row) > 2 else 0
                                 fd = float(row.iloc[3]) if len(row) > 3 else 0
                                 fm = int(row.iloc[4]) if len(row) > 4 else 1
+
+                                # Validate FD range
+                                if fd < 0 or fd > 35:
+                                    st.warning(f"FD value {fd} is outside valid range (0-35 km). Using 3.0 as default.")
+                                    fd = 3.0
 
                                 results = predictor.predict(fd, fm, mw, rjb, vs30)
                                 results_list.append(results)
@@ -564,7 +569,7 @@ def main():
         - **Mw**: Magnitude (4.0 - 7.8)
         - **RJB**: Joyner-Boore Distance (0.1 - 200 km)
         - **VS30**: Shear Wave Velocity (131 - 1380 m/s)
-        - **FD**: Fault Distance (0 - 100 km)
+        - **FD**: Focal Depth (0 - 35 km)
         - **FM**: Fault Mechanism (Normal, Reverse, Strike Slip)
 
         **Output Parameters:**
