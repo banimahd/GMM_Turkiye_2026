@@ -334,7 +334,7 @@ def main():
 
             with st.container(border=True):
                 mw = st.slider(
-                    "M_w",
+                    "Mw",
                     min_value=4.0,
                     max_value=7.8,
                     value=7.0,
@@ -343,7 +343,7 @@ def main():
                 )
 
                 rjb = st.slider(
-                    "R_JB (km)",
+                    "RJB (km)",
                     min_value=0.1,
                     max_value=200.0,
                     value=10.0,
@@ -352,7 +352,7 @@ def main():
                 )
 
                 vs30 = st.slider(
-                    "V_S30 (m/s)",
+                    "VS30 (m/s)",
                     min_value=131.0,
                     max_value=1380.0,
                     value=360.0,
@@ -427,9 +427,9 @@ def main():
 
         st.info("""
         Upload an Excel file with the following columns (in this order):
-        - **M_w** (Magnitude)
-        - **V_S30** (Shear Wave Velocity)
-        - **R_JB** (Joyner-Boore Distance)
+        - **Mw** (Magnitude)
+        - **VS30** (Shear Wave Velocity)
+        - **RJB** (Joyner-Boore Distance)
         - **FD** (Fault Distance)
         - **FM** (Fault Mechanism: 1=Normal, 2=Reverse, 3=Strike Slip)
         """)
@@ -461,7 +461,7 @@ def main():
                                 results_list.append(GMMPredictor._get_default_outputs())
 
                         # Create output DataFrame
-                        output_cols = ['M_w', 'V_S30', 'R_JB', 'FD', 'FM',
+                        output_cols = ['Mw', 'VS30', 'RJB', 'FD', 'FM',
                                        'PGA', 'PGV', 'I_a', 'D_5-75', 'D_5-95', 'T_m', 'CAV',
                                        'PSa_003sec', 'PSa_005sec', 'PSa_0075sec', 'PSa_01sec',
                                        'PSa_015sec', 'PSa_02sec', 'PSa_025sec', 'PSa_03sec',
@@ -521,9 +521,9 @@ def main():
         Ground Motion Model for Turkiye (2026)
 
         **Input Parameters:**
-        - **M_w**: Magnitude (4.0 - 7.8)
-        - **R_JB**: Joyner-Boore Distance (0.1 - 200 km)
-        - **V_S30**: Shear Wave Velocity (131 - 1380 m/s)
+        - **Mw**: Magnitude (4.0 - 7.8)
+        - **RJB**: Joyner-Boore Distance (0.1 - 200 km)
+        - **VS30**: Shear Wave Velocity (131 - 1380 m/s)
         - **FD**: Fault Distance (0 - 100 km)
         - **FM**: Fault Mechanism (Normal, Reverse, Strike Slip)
 
