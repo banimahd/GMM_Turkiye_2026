@@ -396,26 +396,26 @@ def main():
                     col_left, col_right = st.columns(2)
 
                     with col_left:
-                        st.markdown('<div class="result-label">PGA (cm/s²)</div>', unsafe_allow_html=True)
+                        st.markdown(r'<div class="result-label">PGA (cm/s²)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["PGA"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">I<sub>a</sub> (cm/s)</div>', unsafe_allow_html=True)
+                        st.markdown(r'<div class="result-label">$I_a$ (cm/s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["Ia"]:.3f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">D<sub>5%-95%</sub> (s)</div>', unsafe_allow_html=True)
+                        st.markdown(r'<div class="result-label">$D_{5\%-95\%}$ (s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["D_5_95"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">CAV (cm/s)</div>', unsafe_allow_html=True)
+                        st.markdown(r'<div class="result-label">CAV (cm/s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["CAV"]:.2f}</div>', unsafe_allow_html=True)
 
                     with col_right:
-                        st.markdown('<div class="result-label">PGV (cm/s)</div>', unsafe_allow_html=True)
+                        st.markdown(r'<div class="result-label">PGV (cm/s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["PGV"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">T<sub>m</sub> (s)</div>', unsafe_allow_html=True)
+                        st.markdown(r'<div class="result-label">$T_m$ (s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["T_m"]:.2f}</div>', unsafe_allow_html=True)
 
-                        st.markdown('<div class="result-label">D<sub>5%-75%</sub> (s)</div>', unsafe_allow_html=True)
+                        st.markdown(r'<div class="result-label">$D_{5\%-75\%}$ (s)</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="result-box">{results["D_5_75"]:.2f}</div>', unsafe_allow_html=True)
 
                 # Plot spectrum
@@ -466,7 +466,7 @@ def main():
 
                         # Create output DataFrame
                         output_cols = ['M_w', 'V_S30', 'R_JB', 'FD', 'FM',
-                                       'PGA', 'PGV', 'I_a', 'D_5-75', 'D_5-95', 'T_m', 'CAV',
+                                       'PGA', 'PGV', '$I_a$', '$D_{5\%-75\%}$', '$D_{5\%-95\%}$', '$T_m$', 'CAV',
                                        'PSa_003sec', 'PSa_005sec', 'PSa_0075sec', 'PSa_01sec',
                                        'PSa_015sec', 'PSa_02sec', 'PSa_025sec', 'PSa_03sec',
                                        'PSa_04sec', 'PSa_05sec', 'PSa_075sec', 'PSa_10sec',
@@ -519,25 +519,25 @@ def main():
     with tab3:
         st.markdown('<div class="sub-header">ℹ️ About</div>', unsafe_allow_html=True)
 
-        st.markdown("""
+        st.markdown(r"""
         ### GMM Turkiye 2026
 
         Ground Motion Model for Turkiye (2026)
 
         **Input Parameters:**
-        - **M_w**: Magnitude (4.0 - 7.8)
-        - **R_JB**: Joyner-Boore Distance (0.1 - 200 km)
-        - **V_S30**: Shear Wave Velocity (131 - 1380 m/s)
+        - **$M_w$**: Magnitude (4.0 - 7.8)
+        - **$R_{JB}$**: Joyner-Boore Distance (0.1 - 200 km)
+        - **$V_{S30}$**: Shear Wave Velocity (131 - 1380 m/s)
         - **FD**: Fault Distance (0 - 100 km)
         - **FM**: Fault Mechanism (Normal, Reverse, Strike Slip)
 
         **Output Parameters:**
         - **PGA**: Peak Ground Acceleration (cm/s²)
         - **PGV**: Peak Ground Velocity (cm/s)
-        - **I_a**: Arias Intensity (cm/s)
-        - **D<sub>5%-75%</sub>**: Duration between 5% and 75% (s)
-        - **D<sub>5%-95%</sub>**: Duration between 5% and 95% (s)
-        - **T_m**: Mean Period (s)
+        - **$I_a$**: Arias Intensity (cm/s)
+        - **$D_{5\%-75\%}$**: Duration between 5% and 75% (s)
+        - **$D_{5\%-95\%}$**: Duration between 5% and 95% (s)
+        - **$T_m$**: Mean Period (s)
         - **CAV**: Cumulative Absolute Velocity (cm/s)
         - **PSa**: Spectral Accelerations at 18 periods (cm/s²)
 
