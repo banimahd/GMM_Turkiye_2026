@@ -103,6 +103,7 @@ st.markdown("""
         border-radius: 4px;
         border: 1px solid #e0e0e0;
         margin-top: 15px;
+        text-align: left;
     }
     .reference a {
         color: #2196F3;
@@ -115,7 +116,7 @@ st.markdown("""
         font-family: 'Times New Roman', serif;
         font-size: 1rem;
         color: #333;
-        text-align: center;
+        text-align: left;
         margin-top: 15px;
         padding-top: 10px;
         border-top: 1px solid #e0e0e0;
@@ -612,7 +613,7 @@ def main():
         - **PSa**: Spectral Accelerations at 18 periods (cm/s²)
         """)
 
-        # Reference section
+        # Reference section - Left aligned
         st.markdown("""
         <div class="reference">
         <strong>📄 Reference:</strong><br>
@@ -625,7 +626,7 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        # Developer section
+        # Developer section - Left aligned
         st.markdown("""
         <div class="developer">
         <strong>👨‍💻 Developer:</strong> Seyed Amir Banimahd
